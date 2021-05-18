@@ -1,8 +1,10 @@
 <%@ include file="../init.jsp" %>
 
-<p>
-	<b><liferay-ui:message key="adminmonitor.caption"/></b>
-</p>
+<c:if test="<%= !themeDisplay.isSignedIn()%>">
+	<%
+		renderRequest.setAttribute(WebKeys.PORTLET_CONFIGURATOR_VISIBILITY, Boolean.FALSE);
+	%>
+</c:if>
 
 <liferay-ui:tabs
 		names="<%= "All,Registration,Login" %>"

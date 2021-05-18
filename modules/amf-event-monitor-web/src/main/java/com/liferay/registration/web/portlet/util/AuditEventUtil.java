@@ -6,7 +6,6 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.security.audit.AuditEventManager;
 import com.liferay.portal.security.audit.AuditEvent;
-import com.liferay.portal.kernel.audit.AuditMessage;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -27,9 +26,6 @@ public class AuditEventUtil {
 
         return editAssignUserInformationEventList(_auditEventManager.getAuditEvents(
                 companyId, start, end, orderByComparator));
-
-//        return _auditEventManager.getAuditEvents(
-//                companyId, start, end, orderByComparator);
     }
 
     public static List<AuditEvent> getAuditEvents(
@@ -52,6 +48,16 @@ public class AuditEventUtil {
     public static int getAuditEventsCountByType(long companyId, String eventType, OrderByComparator orderByComparator) throws JSONException {
         List<AuditEvent> auditEventList = getAuditEvents(companyId,0,getAuditEventsCount(companyId),orderByComparator);
         return (int)auditEventList.stream().filter(auditEvent -> auditEvent.getEventType().equals(eventType)).count();
+    }
+
+    public static int getAuditEventsCountByUserId(long companyId, long userId, OrderByComparator orderByComparator) throws JSONException {
+        List<AuditEvent> auditEventList = getAuditEvents(companyId,0,getAuditEventsCount(companyId),orderByComparator);
+        return (int)auditEventList.stream().filter(auditEvent -> auditEvent.getUserId()==userId).count();
+    }
+
+    public static int getAuditEventsCountByTypeAndUserId(long companyId, String eventType, long userId, OrderByComparator orderByComparator) throws JSONException {
+        List<AuditEvent> auditEventList = getAuditEvents(companyId,0,getAuditEventsCount(companyId),orderByComparator);
+        return (int)auditEventList.stream().filter(auditEvent -> auditEvent.getEventType().equals(eventType)&& auditEvent.getUserId()==userId).count();
     }
 
     public static int getAuditEventsCount(
@@ -99,13 +105,64 @@ public class AuditEventUtil {
     public static List<AuditEvent> getAuditEventsByUserId(long companyId, int start, int end,
                                                           OrderByComparator orderByComparator, long userId) throws JSONException {
 
-        List<AuditEvent> auditEventList = getAuditEvents(companyId,start,end,orderByComparator);
+        List<AuditEvent> auditEventList = getAuditEvents(companyId,0,getAuditEventsCount(companyId),orderByComparator);
 
         List<AuditEvent> auditEventListByUserId = auditEventList.stream().filter(
                 auditEvent -> auditEvent.getUserId()==userId
         ).collect(Collectors.toList());
 
-        return auditEventListByUserId;
+        List<AuditEvent> auditEventListReturn = new ArrayList<>();
+
+        int listSize = auditEventListByUserId.size();
+
+        if(start>=listSize){
+            for(int auditEventIndex = 0; auditEventIndex<listSize;auditEventIndex++){
+                auditEventListReturn.add(auditEventListByUserId.get(auditEventIndex));
+            }
+        }
+        if(end>=listSize){
+            for(int auditEventIndex = start; auditEventIndex<listSize;auditEventIndex++){
+                auditEventListReturn.add(auditEventListByUserId.get(auditEventIndex));
+            }
+        } else {
+            for(int auditEventIndex = start; auditEventIndex<end;auditEventIndex++){
+                auditEventListReturn.add(auditEventListByUserId.get(auditEventIndex));
+            }
+        }
+
+        return auditEventListReturn;
+    }
+
+    public static List<AuditEvent> getAuditEventsByTypeAndUserId(long companyId, int start, int end,
+                                                          OrderByComparator orderByComparator, String eventType, long userId ) throws JSONException {
+
+        List<AuditEvent> auditEventListByUserId = getAuditEventsByUserId(companyId,0,getAuditEventsCount(companyId),
+                orderByComparator,userId);
+
+        List<AuditEvent> auditEventListReturn = new ArrayList<>();
+
+        List<AuditEvent> auditEventListByType = auditEventListByUserId.stream().filter(
+                auditEvent -> auditEvent.getEventType().equals(eventType)
+        ).collect(Collectors.toList());
+
+        int listSize = auditEventListByType.size();
+
+        if(start>=listSize){
+            for(int auditEventIndex = 0; auditEventIndex<listSize;auditEventIndex++){
+                auditEventListReturn.add(auditEventListByType.get(auditEventIndex));
+            }
+        }
+        if(end>=listSize){
+            for(int auditEventIndex = start; auditEventIndex<listSize;auditEventIndex++){
+                auditEventListReturn.add(auditEventListByType.get(auditEventIndex));
+            }
+        } else {
+            for(int auditEventIndex = start; auditEventIndex<end;auditEventIndex++){
+                auditEventListReturn.add(auditEventListByType.get(auditEventIndex));
+            }
+        }
+
+        return auditEventListReturn;
     }
 
     //add userId and userName for 3 auditEvent after register the account
